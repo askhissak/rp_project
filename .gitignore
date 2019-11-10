@@ -1,0 +1,118 @@
+######################### Binary Files #########################
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.cuo
+*.obj
+
+# Compiled Dynamic libraries
+*.so*
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled protocol buffers
+*.pb.h
+*.pb.cc
+*_pb2.py
+
+# Compiled python
+*.pyc
+
+# Compiled MATLAB
+*.mex*
+
+# LevelDB files
+*.sst
+*.ldb
+LOCK
+LOG*
+CURRENT
+MANIFEST-*
+
+# Prerequisites
+*.d
+
+# Executables
+*.exe
+*.out
+*.app
+
+######################### IDEs Files #########################
+# Editor temporaries
+*.swp
+*~
+
+# OSX dir files
+.DS_Store
+._.DS_Store
+
+######################### Windows (Visual Studio) Files #########################
+*.db
+*.deps
+*.obj
+*.opendb
+*.pdb
+
+######################### Windows (Visual Studio) Folders and Compressed files #########################
+*.vs/
+*.vscode/
+.vscode/*
+.vscode/
+.vscode
+.vscode*
+*x64/
+
+######################### Images / Video #########################
+# Camera parameters
+config/
+*.xml
+*.yml
+
+######################### Git and Zip Files #########################
+.git/
+.github
+*zip
+
+######################### Compilation (build, distribute & bins) Files / Folders #########################
+*.bin
+*.testbin
+build
+build*
+.build*
+*cmake_build
+distribute/*
+
+######################### Generated Documentation #########################
+_site
+docs/_site
+docs/dev
+docs/gathered
+doxygen
+html/
+
+######################### Video Files #########################
+# Videos
+*.mp4
+*.mov
+
+# Images
+data/output/
+data/output*
+*.jpg
+*.png
+
+######################### Validation Scripts & Testing #########################
+output*/
+
+__pycache__
