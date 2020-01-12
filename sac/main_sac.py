@@ -10,10 +10,12 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.distributions import Normal
 
-import matplotlib.pyplot as plt
+# from agent import ReplayBuffer, ValueNetwork, SoftQNetwork, PolicyNetwork, soft_q_update
 
 use_cuda = torch.cuda.is_available()
 device   = torch.device("cuda" if use_cuda else "cpu")
+
+import matplotlib.pyplot as plt
 
 class ReplayBuffer:
     def __init__(self, capacity):
@@ -35,24 +37,27 @@ class ReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
-class NormalizedActions(gym.ActionWrapper):
-    def _action(self, action):
-        low  = self.action_space.low
-        high = self.action_space.high
+# class NormalizedActions(gym.ActionWrapper):
+#     def _step(self, action):
+#         return self.env.step(self.action(action))
+    
+#     def _action(self, action):
+#         low  = self.action_space.low
+#         high = self.action_space.high
         
-        action = low + (action + 1.0) * 0.5 * (high - low)
-        action = np.clip(action, low, high)
+#         action = low + (action + 1.0) * 0.5 * (high - low)
+#         action = np.clip(action, low, high)
         
-        return action
+#         return action
 
-    def _reverse_action(self, action):
-        low  = self.action_space.low
-        high = self.action_space.high
+#     def _reverse_action(self, action):
+#         low  = self.action_space.low
+#         high = self.action_space.high
         
-        action = 2 * (action - low) / (high - low) - 1
-        action = np.clip(action, low, high)
+#         action = 2 * (action - low) / (high - low) - 1
+#         action = np.clip(action, low, high)
         
-        return action
+#         return action
 
 def plot(frame_idx, rewards):
     plt.figure(figsize=(20,5))
@@ -207,3 +212,67 @@ def soft_q_update(batch_size,
         target_param.data.copy_(
             target_param.data * (1.0 - soft_tau) + param.data * soft_tau
         )
+
+env = gym.make("Pendulum-v0")
+
+action_dim = env.action_space.shape[0]
+state_dim  = env.observation_space.shape[0]
+hidden_dim = 256
+
+value_net        = ValueNetwork(state_dim, hidden_dim).to(device)
+target_value_net = ValueNetwork(state_dim, hidden_dim).to(device)
+
+soft_q_net = SoftQNetwork(state_dim, action_dim, hidden_dim).to(device)
+policy_net = PolicyNetwork(state_dim, action_dim, hidden_dim).to(device)
+
+for target_param, param in zip(target_value_net.parameters(), value_net.parameters()):
+    target_param.data.copy_(param.data)
+    
+
+value_criterion  = nn.MSELoss()
+soft_q_criterion = nn.MSELoss()
+
+value_lr  = 3e-4
+soft_q_lr = 3e-4
+policy_lr = 3e-4
+
+value_optimizer  = optim.Adam(value_net.parameters(), lr=value_lr)
+soft_q_optimizer = optim.Adam(soft_q_net.parameters(), lr=soft_q_lr)
+policy_optimizer = optim.Adam(policy_net.parameters(), lr=policy_lr)
+
+
+replay_buffer_size = 1000000
+replay_buffer = ReplayBuffer(replay_buffer_size)
+
+max_frames  = 40000
+max_steps   = 500
+frame_idx   = 0
+rewards     = []
+batch_size  = 128
+
+max_frames  = 40000
+
+while frame_idx < max_frames:
+    state = env.reset()
+    episode_reward = 0
+    
+    for step in range(max_steps):
+        action = policy_net.get_action(state)
+        next_state, reward, done, _ = env.step(action)
+        
+        replay_buffer.push(state, action, reward, next_state, done)
+        if len(replay_buffer) > batch_size:
+            soft_q_update(batch_size)
+        
+        state = next_state
+        episode_reward += reward
+        frame_idx += 1
+        
+        if frame_idx % 10000 == 0:
+            plot(frame_idx, rewards)
+        
+        if done:
+            break
+        
+    rewards.append(episode_reward)
+
