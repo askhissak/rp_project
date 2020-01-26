@@ -22,7 +22,9 @@ if __name__ == "__main__":
 
     # Value iteration
     gamma = 0.9
-    policy_stable = True
+    k = 0.1
+
+    # policy_stable = True
     delta = 0.1
     while delta > 0.0001:
         delta = 0
@@ -31,27 +33,28 @@ if __name__ == "__main__":
                 old_action = policy[i, j]
                 value_temp = value_est[i, j]
                 neighbor_values = np.zeros(4)
-                print(env.P[i, j, env.LEFT])
 
-                for k in range(len(env.P[i, j, env.LEFT])):
-                    if env.P[i, j, env.LEFT][k][2] is not True:
-                        neighbor_values[0] = neighbor_values[0] + env.P[i, j, env.LEFT][k][3]*(
-                            env.R[i, j, env.LEFT][k][1] + gamma*value_est[env.P[i, j, env.LEFT][k][0]])
-                for k in range(len(env.P[i, j, env.DOWN])):
-                    if env.P[i, j, env.DOWN][k][2] is not True:
-                        neighbor_values[1] = neighbor_values[1] + env.P[i, j, env.DOWN][k][3]*(
-                            env.R[i, j, env.DOWN][k][1] + gamma*value_est[env.P[i, j, env.DOWN][k][0]])
-                for k in range(len(env.P[i, j, env.RIGHT])):
-                    if env.P[i, j, env.RIGHT][k][2] is not True:
-                        neighbor_values[2] = neighbor_values[2] + env.P[i, j, env.RIGHT][k][3]*(
-                            env.R[i, j, env.RIGHT][k][1] + gamma*value_est[env.P[i, j, env.RIGHT][k][0]])
-                for k in range(len(env.P[i, j, env.UP])):
-                    if env.P[i, j, env.UP][k][2] is not True:
-                        neighbor_values[3] = neighbor_values[3] + env.P[i, j, env.UP][k][3]*(
-                            env.R[i, j, env.UP][k][1] + gamma*value_est[env.P[i, j, env.UP][k][0]])
-
-                index, value_est[i, j] = max(
-                    enumerate(neighbor_values), key=operator.itemgetter(1))
+                for k in range(len(env.transitions[i, j, env.LEFT])):
+                    if env.transitions[i, j, env.LEFT][k][2] is not True:
+                        if env.transitions[i, j, env.LEFT][k][0] != None:
+                            neighbor_values[0] = neighbor_values[0] + env.transitions[i, j, env.LEFT][k][3]*(
+                                env.transitions[i, j, env.LEFT][k][1] + gamma*value_est[env.transitions[i, j, env.LEFT][k][0]])
+                for k in range(len(env.transitions[i, j, env.DOWN])):
+                    if env.transitions[i, j, env.DOWN][k][2] is not True:
+                        if env.transitions[i, j, env.LEFT][k][0] != None:
+                            neighbor_values[1] = neighbor_values[1] + env.transitions[i, j, env.DOWN][k][3]*(
+                                env.transitions[i, j, env.DOWN][k][1] + gamma*value_est[env.transitions[i, j, env.DOWN][k][0]])
+                for k in range(len(env.transitions[i, j, env.RIGHT])):
+                    if env.transitions[i, j, env.RIGHT][k][2] is not True:
+                        if env.transitions[i, j, env.LEFT][k][0] != None:
+                            neighbor_values[2] = neighbor_values[2] + env.transitions[i, j, env.RIGHT][k][3]*(
+                                env.transitions[i, j, env.RIGHT][k][1] + gamma*value_est[env.transitions[i, j, env.RIGHT][k][0]])
+                for k in range(len(env.transitions[i, j, env.UP])):
+                    if env.transitions[i, j, env.UP][k][2] is not True:
+                        if env.transitions[i, j, env.LEFT][k][0] != None:
+                            neighbor_values[3] = neighbor_values[3] + env.transitions[i, j, env.UP][k][3]*(
+                                env.transitions[i, j, env.UP][k][1] + gamma*value_est[env.transitions[i, j, env.UP][k][0]])
+                index, value_est[i, j] = max(enumerate(neighbor_values), key=operator.itemgetter(1))
                 policy[i, j] = index
                 delta = max(delta, abs(value_est[i, j] - value_temp))
         #         if old_action != policy[i,j]:
