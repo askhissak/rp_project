@@ -358,8 +358,8 @@ class FoodTruck(gym.Env):
     def state_to_coord(self, state):
         return state % self.w, state // self.w
 
-    def true_hyperbolic(self, k, t):
-        return 1 / (1 + k * t)
+    #def true_hyperbolic(self, k, t):
+    #    return 1 / (1 + k * t)
 
     def _update_transitions(self):
         """Updates the state transition model after rewards etc. were changed."""
