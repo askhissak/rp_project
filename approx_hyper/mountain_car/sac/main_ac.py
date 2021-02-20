@@ -3,20 +3,30 @@ import gym
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
-from agent import Agent, Policy
-from food_truck import FoodTruck
+from ac_agent import Agent, Policy
 import pandas as pd
 import time
+import sys
 
+# Command line arguments
+def parse_args(args=sys.argv[1:]):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--test", "-t", type=str, default=None, help="Model to be tested")
+    parser.add_argument("--env", type=str, default="MountainCar-v0", help="Environment to use")
+    parser.add_argument("--train_episodes", type=int, default=5000, help="Number of episodes to train for")
+    parser.add_argument("--test_episodes", type=int, default=10, help="Number of episodes to test for")
+    parser.add_argument("--render_train", action='store_true', help="Render each frame during training. Will be slower.")
+    parser.add_argument("--render_test", action='store_true', help="Render test")
+    return parser.parse_args(args)
 
 # Policy training function
 def train(print_things=True, train_run_id=0, train_episodes=5000):
     # Create a Gym environment
-    env = FoodTruck()
+    env = gym.make(args.env)
 
     # Get dimensionalities of actions and observations
-    action_space_dim = env.n_actions
-    observation_space_dim = env.n_states_extended
+    action_space_dim = env.action_space.n
+    observation_space_dim = env.observation_space.shape[-1]
 
     # Instantiate agent and its policy
     policy = Policy(observation_space_dim, action_space_dim)
@@ -129,12 +139,8 @@ def train(print_things=True, train_run_id=0, train_episodes=5000):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--test", "-t", type=str, default=None, help="Model to be tested")
-    # parser.add_argument("--env", type=str, default="FoodTruck()", help="Environment to use")
-    parser.add_argument("--train_episodes", type=int, default=5000, help="Number of episodes to train for")
-    parser.add_argument("--render_test", action='store_true', help="Render test")
-    args = parser.parse_args()
+    
+    args = parse_args()
 
     # If no model was passed, train a policy from scratch.
     # Otherwise load the policy from the file and go directly to testing.
