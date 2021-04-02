@@ -26,6 +26,7 @@ MAPS = {"original": torch.tensor([  [DONUT_SOUTH_FIRST, WALL, WALL, GRID, WALL, 
 
 REWARDS = { "original": ((10,-10), (10,-10), (-10,20), (0,0)), 
             "version_1": ((11,-10), (11,-10), (-10,21), (0,0)),
+            "version_2": ((10,-10), (10,-10), (-10,11), (0,0)),
             "version_1_effort": ((11-1,-10-1), (11-1,-10-1), (-10-1,20-1), (0-1,0-1)),
             "version_2_effort": ((11-0.2,-10-0.2), (11-0.2,-10-0.2), (-10-0.2,20-0.2), (0-0.2,0-0.2))}
 
@@ -35,7 +36,7 @@ class FoodTruck(gym.Env):
     LEFT, DOWN, RIGHT, UP = range(NO_ACTIONS)
 
     # Required
-    def __init__(self, reward_type = "version_1", time_cost = -0.01, hit_wall_cost=-2):
+    def __init__(self, reward_type = "version_2", time_cost = -0.01, hit_wall_cost=-2):
         self.grid_map = MAPS["original"]
         self.time_cost = time_cost
         self.hit_wall_cost = hit_wall_cost
@@ -48,12 +49,13 @@ class FoodTruck(gym.Env):
         self.init_y = 1 
         self.state = 0, 0
 
-        self.rewards = np.zeros((self.w, self.h))
+        self.rewards = np.zeros((self.w, self.h)) + self.time_cost
         self.terminate = np.zeros((self.w,self.h))
         self.delayed_rewards = np.zeros((self.w, self.h))
+        self.delayed_terminate = np.zeros((self.w,self.h))
         # self.states = self.grid_map.reshape(-1)
         # self.wrong_action_prob = 0.0005
-        self.visited = np.zeros(4)
+        self.visited = 0
         self.transitions = None
 
         #Render
@@ -89,10 +91,10 @@ class FoodTruck(gym.Env):
         # self.P = torch.zeros((self.n_states, self.n_actions, self.n_states)) #transition probability
         self.reset()
 
-        self.terminate[self.rest1_x[0],self.rest1_y[0]] = 1
-        self.terminate[self.rest2_x[0],self.rest2_y[0]] = 1
-        self.terminate[self.rest3_x[0],self.rest3_y[0]] = 1
-        self.terminate[self.rest4_x[0],self.rest4_y[0]] = 1
+        # self.terminate[self.rest1_x[0],self.rest1_y[0]] = 1
+        # self.terminate[self.rest2_x[0],self.rest2_y[0]] = 1
+        # self.terminate[self.rest3_x[0],self.rest3_y[0]] = 1
+        # self.terminate[self.rest4_x[0],self.rest4_y[0]] = 1
 
         self.rewards[self.rest1_x[0],self.rest1_y[0]] = self.rest_rewards[1][0]
         self.rewards[self.rest2_x[0],self.rest2_y[0]] = self.rest_rewards[3][0]
@@ -104,13 +106,32 @@ class FoodTruck(gym.Env):
         self.delayed_rewards[self.rest3_x[0],self.rest3_y[0]] = self.rest_rewards[0][1]
         self.delayed_rewards[self.rest4_x[0],self.rest4_y[0]] = self.rest_rewards[2][1]
 
+        self.delayed_terminate[self.rest1_x[0],self.rest1_y[0]] = 1
+        self.delayed_terminate[self.rest2_x[0],self.rest2_y[0]] = 1
+        self.delayed_terminate[self.rest3_x[0],self.rest3_y[0]] = 1
+        self.delayed_terminate[self.rest4_x[0],self.rest4_y[0]] = 1
+
         for s_col, s_row in product(range(self.h),range(self.w)):
             if self.grid_map[s_col,s_row] == WALL:
                     self.terminate[s_row, s_col] = 2
                     self.rewards[s_row, s_col] = self.hit_wall_cost
 
         self._update_transitions()
+        # for i in range(len(self.transitions)):
+        #     print("Transition", i, "0: ", self.transitions[i][0])
+        #     print("Transition", i, "1: ", self.transitions[i][1])
+        #     print("Transition", i, "2: ", self.transitions[i][2])
+        #initial position
+        print(self.transitions[self.init_x, self.init_y, 0])
+        print(self.transitions[self.init_x, self.init_y, 1])
+        print(self.transitions[self.init_x, self.init_y, 2])
+        print(self.transitions[self.init_x, self.init_y, 3])
 
+        #donut south
+        print(self.transitions[self.rest1_x[0],self.rest1_y[0], 0])
+        print(self.transitions[self.rest1_x[0],self.rest1_y[0], 1])
+        print(self.transitions[self.rest1_x[0],self.rest1_y[0], 2])
+        print(self.transitions[self.rest1_x[0],self.rest1_y[0], 3])
         # self.P[-1, :, -1] = 1.0
         # self.R[-1,:,:] = 0
 
@@ -173,6 +194,7 @@ class FoodTruck(gym.Env):
         yt = np.arange(0, 1, 1/self.h)
         self.ax.set_xticks(xt)
         self.ax.set_yticks(yt)
+        self.episode_finished = False
 
         return self.state
 
@@ -408,27 +430,14 @@ class FoodTruck(gym.Env):
                 state - current state
                 action -  action to be taken/evaluated
             Returns:
-                 an array of (state, reward, done, prob) uples:
+                 an array of (state, reward, done, prob) tuples:
                 [(state1, reward1, done1, prob1), (state2, reward2, done2, prob2)...].
                 State is None if the episode terminates."""
         
         if self.terminate[state]==2:
             return [(None, 0, False, 1)]
 
-        if state[0] == self.rest1_x and state[1] == self.rest1_y and self.visited[0]==0:
-            self.visited[0] = 1
-            return [(state, self.delayed_rewards[state], False, 1)]
-        elif state[0] == self.rest2_x and state[1] == self.rest2_y and self.visited[1]==0:
-            self.visited[1] = 1
-            return [(state, self.delayed_rewards[state], False, 1)]
-        elif state[0] == self.rest3_x and state[1] == self.rest3_y and self.visited[2]==0:
-            self.visited[2] = 1
-            return [(state, self.delayed_rewards[state], False, 1)]
-        elif state[0] == self.rest4_x and state[1] == self.rest4_y and self.visited[3]==0:
-            self.visited[3] = 1
-            return [(state, self.delayed_rewards[state], False, 1)]    
-
-        if self.terminate[state]:
+        if self.delayed_terminate[state]:
             return [(None, 0, True, 1)]
 
         transitions = []

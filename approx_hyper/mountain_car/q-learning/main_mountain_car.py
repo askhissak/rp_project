@@ -6,20 +6,20 @@ import argparse
 import math
 
 # Parameters
+hyperbolic = True
 gamma = 0.99
-k = 0.5
+k = 100
 eta = - math.log(gamma)/k
 
 # Plot the heatmap
 def plot_heatmap(values, x_grid, v_grid):
     # TODO: Plot the heatmap here using Seaborn or Matplotlib
-    plot_values = np.mean(values,axis=(1,3))
     plt.title("Heatmap after training")
     plt.xlabel("Position")
     plt.xticks(np.arange(len(x_grid))+0.5,np.around(x_grid,2),rotation=90)
     plt.ylabel("Velocity")
     plt.yticks(np.arange(len(v_grid))+0.5,np.around(v_grid,2))
-    plt.imshow(plot_values)
+    plt.imshow(values)
     plt.colorbar()
     plt.show()
 
@@ -38,7 +38,7 @@ def parse_args(args=sys.argv[1:]):
                         help="Model to be tested")
     parser.add_argument("--env", type=str, default="MountainCar-v0",
                         help="Environment to use")
-    parser.add_argument("--train_episodes", type=int, default=20000,
+    parser.add_argument("--train_episodes", type=int, default=10000,
                         help="Number of episodes to train for")
     parser.add_argument("--test_episodes", type=int, default=10,
                         help="Number of episodes to test for")
@@ -115,8 +115,10 @@ def main(args):
             # Calculate Q values
             if not test:
                 if not done: 
-                    q_grid[x_ind,v_ind,action] += alpha*(approx_hyperbolic(reward, total_reward) + gamma*(np.max(q_grid[x_new_ind,v_new_ind])) - q_grid[x_ind,v_ind,action])
-                    # q_grid[x_ind,v_ind,action] += alpha*(reward + gamma*(np.max(q_grid[x_new_ind,v_new_ind])) - q_grid[x_ind,v_ind,action])
+                    if hyperbolic:
+                        q_grid[x_ind,v_ind,action] += alpha*(approx_hyperbolic(reward, total_reward) + gamma*(np.max(q_grid[x_new_ind,v_new_ind])) - q_grid[x_ind,v_ind,action])
+                    else:
+                        q_grid[x_ind,v_ind,action] += alpha*(reward + gamma*(np.max(q_grid[x_new_ind,v_new_ind])) - q_grid[x_ind,v_ind,action])
                 else:
                     q_grid[x_ind,v_ind,action] += alpha*(reward + gamma*0 - q_grid[x_ind,v_ind,action])
             else:
@@ -124,6 +126,17 @@ def main(args):
             total_reward += reward
             state = new_state
             steps += 1
+
+        #Heatmap after a single episode
+        # if ep == 0:
+        #     plt.title("Heatmap after a single episode")
+        #     plt.xlabel("Angle Theta")
+        #     plt.xticks(np.arange(len(x_grid))+0.5,np.around(x_grid,2),rotation=90)
+        #     plt.ylabel("Position x")
+        #     plt.yticks(np.arange(len(v_grid))+0.5,np.around(v_grid,2))     
+        #     plt.imshow(np.max(q_grid,axis=2))
+        #     plt.colorbar()       
+        #     plt.show()
 
         # Print some logs
         ep_lengths.append(steps)
